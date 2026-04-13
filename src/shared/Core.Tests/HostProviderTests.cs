@@ -30,12 +30,13 @@ namespace GitCredentialManager.Tests
                 IsSupportedFunc = _ => true,
                 GenerateCredentialFunc = _ =>
                 {
-                    Assert.True(false, "Should never be called");
+                    Assert.Fail("Should never be called");
                     return null;
                 },
             };
 
-            ICredential actualCredential = await ((IHostProvider) provider).GetCredentialAsync(input);
+            var result = await ((IHostProvider) provider).GetCredentialAsync(input);
+            ICredential actualCredential = result.Credential; 
 
             Assert.Equal(userName, actualCredential.Account);
             Assert.Equal(password, actualCredential.Password);
@@ -66,7 +67,8 @@ namespace GitCredentialManager.Tests
                 },
             };
 
-            ICredential actualCredential = await ((IHostProvider) provider).GetCredentialAsync(input);
+            var result = await ((IHostProvider) provider).GetCredentialAsync(input);
+            ICredential actualCredential = result.Credential;
 
             Assert.True(generateWasCalled);
             Assert.Equal(userName, actualCredential.Account);

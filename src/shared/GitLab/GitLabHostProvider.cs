@@ -95,10 +95,13 @@ namespace GitLab
             ThrowIfDisposed();
 
             // We should not allow unencrypted communication and should inform the user
-            if (StringComparer.OrdinalIgnoreCase.Equals(input.Protocol, "http"))
+            if (!Context.Settings.AllowUnsafeRemotes &&
+                StringComparer.OrdinalIgnoreCase.Equals(input.Protocol, "http"))
             {
                 throw new Trace2Exception(Context.Trace2,
-                    "Unencrypted HTTP is not supported for GitHub. Ensure the repository remote URL is using HTTPS.");
+                    "Unencrypted HTTP is not recommended for GitLab. " +
+                    "Ensure the repository remote URL is using HTTPS " +
+                    $"or see {Constants.HelpUrls.GcmUnsafeRemotes} about how to allow unsafe remotes.");
             }
 
             Uri remoteUri = input.GetRemoteUri();
@@ -176,7 +179,7 @@ namespace GitLab
         }
 
         // <remarks>Stores OAuth tokens as a side effect</remarks>
-        public override async Task<ICredential> GetCredentialAsync(InputArguments input)
+        public override async Task<GetCredentialResult> GetCredentialAsync(InputArguments input)
         {
             string service = GetServiceName(input);
             ICredential credential = Context.CredentialStore.Get(service, input.UserName);
@@ -189,7 +192,7 @@ namespace GitLab
 
             if (credential != null)
             {
-                return credential;
+                return new GetCredentialResult(credential);
             }
 
             string refreshService = GetRefreshTokenServiceName(input);
@@ -218,7 +221,7 @@ namespace GitLab
                 // store refresh token under a separate service
                 Context.CredentialStore.AddOrUpdate(refreshService, oAuthCredential.Account, oAuthCredential.RefreshToken);
             }
-            return credential;
+            return new GetCredentialResult(credential);
         }
 
         private async Task<bool> IsOAuthTokenExpired(Uri baseUri, string accessToken)

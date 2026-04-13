@@ -15,7 +15,9 @@ namespace GitCredentialManager
         public const string AuthorityIdAuto = "auto";
 
         public const string GcmDataDirectoryName = ".gcm";
+        public const string LinuxAppDefaultsDirectoryPath = "/etc/git-credential-manager/config.d";
 
+        public const string MacOSBundleId = "git-credential-manager";
         public static readonly Guid DevBoxPartnerId = new("e3171dd9-9a5f-e5be-b36c-cc7c4f3f3bcf");
 
         /// <summary>
@@ -29,6 +31,13 @@ namespace GitCredentialManager
         /// </summary>
         public static readonly Guid MsaTransferTenantId = new("f8cdef31-a31e-4b4a-93e4-5f571e91255a");
 
+        public static class CredentialProtocol
+        {
+            public const string NtlmKey = "ntlm";
+            public const string NtlmSuppressed = "suppressed";
+            public const string NtlmAllow = "allow";
+        }
+
         public static class CredentialStoreNames
         {
             public const string WindowsCredentialManager = "wincredman";
@@ -38,6 +47,7 @@ namespace GitCredentialManager
             public const string SecretService = "secretservice";
             public const string Plaintext = "plaintext";
             public const string Cache = "cache";
+            public const string None = "none";
         }
 
         public static class RegexPatterns
@@ -119,6 +129,7 @@ namespace GitCredentialManager
             public const string OAuthDefaultUserName     = "GCM_OAUTH_DEFAULT_USERNAME";
             public const string GcmDevUseLegacyUiHelpers = "GCM_DEV_USELEGACYUIHELPERS";
             public const string GcmGuiSoftwareRendering  = "GCM_GUI_SOFTWARE_RENDERING";
+            public const string GcmAllowUnsafeRemotes    = "GCM_ALLOW_UNSAFE_REMOTES";
         }
 
         public static class Http
@@ -162,6 +173,8 @@ namespace GitCredentialManager
                 public const string DevUseLegacyUiHelpers = "devUseLegacyUiHelpers";
                 public const string MsAuthUseDefaultAccount = "msauthUseDefaultAccount";
                 public const string GuiSoftwareRendering = "guiSoftwareRendering";
+                public const string GpgPassStorePath = "gpgPassStorePath";
+                public const string AllowUnsafeRemotes = "allowUnsafeRemotes";
 
                 public const string OAuthAuthenticationModes = "oauthAuthModes";
                 public const string OAuthClientId            = "oauthClientId";
@@ -185,6 +198,7 @@ namespace GitCredentialManager
                 public const string SslCaInfo = "sslCAInfo";
                 public const string SslAutoClientCert = "sslAutoClientCert";
                 public const string CookieFile = "cookieFile";
+                public const string AllowNtlmAuth = "allowNTLMAuth";
             }
 
             public static class Remote
@@ -225,6 +239,8 @@ namespace GitCredentialManager
             public const string GcmAutoDetect          = "https://aka.ms/gcm/autodetect";
             public const string GcmDefaultAccount      = "https://aka.ms/gcm/defaultaccount";
             public const string GcmMultipleUsers       = "https://aka.ms/gcm/multipleusers";
+            public const string GcmUnsafeRemotes       = "https://aka.ms/gcm/unsaferemotes";
+            public const string GcmNtlm                = "https://aka.ms/gcm/ntlm";
         }
 
         private static Version _gcmVersion;

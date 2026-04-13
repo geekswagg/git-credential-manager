@@ -92,6 +92,11 @@ namespace GitCredentialManager.Authentication
         /// If both <see cref="Certificate"/> and <see cref="ClientSecret"/> are set, the certificate will be used.
         /// </remarks>
         public string ClientSecret { get; set; }
+
+        /// <summary>
+        /// Whether the authentication should send X5C
+        /// </summary>
+        public bool SendX5C { get; set; }
     }
 
     public interface IMicrosoftAuthenticationResult
@@ -269,12 +274,14 @@ namespace GitCredentialManager.Authentication
 
             try
             {
-                AuthenticationResult result = await app.AcquireTokenForClient(scopes).ExecuteAsync();
+                Context.Trace.WriteLine($"Sending with X5C: '{sp.SendX5C}'.");
+                AuthenticationResult result = await app.AcquireTokenForClient(scopes).WithSendX5C(sp.SendX5C).ExecuteAsync();;
+
                 return new MsalResult(result);
             }
             catch (Exception ex)
             {
-                Context.Trace.WriteLine($"Failed to acquire token for service principal '{sp.TenantId}/{sp.TenantId}'.");
+                Context.Trace.WriteLine($"Failed to acquire token for service principal '{sp.TenantId}/{sp.Id}'.");
                 Context.Trace.WriteException(ex);
                 throw;
             }
@@ -329,7 +336,7 @@ namespace GitCredentialManager.Authentication
                     }
                 }
 
-                var viewModel = new DefaultAccountViewModel(Context.Environment)
+                var viewModel = new DefaultAccountViewModel(Context.SessionManager)
                 {
                     UserName = userName
                 };
@@ -747,10 +754,33 @@ namespace GitCredentialManager.Authentication
             };
         }
 
-        private static SystemWebViewOptions GetSystemWebViewOptions()
+        private SystemWebViewOptions GetSystemWebViewOptions()
         {
             // TODO: add nicer HTML success and error pages
-            return new SystemWebViewOptions();
+            return new SystemWebViewOptions
+            {
+                OpenBrowserAsync = OpenBrowserFunc
+            };
+
+            // We have special handling for Linux and WSL to open the system browser
+            // so we need to use our own function here. Sorry MSAL!
+            Task OpenBrowserFunc(Uri uri)
+            {
+                try
+                {
+                    Context.SessionManager.OpenBrowser(uri);
+                }
+                catch (Exception ex)
+                {
+                    Context.Trace.WriteLine("Failed to open system web browser - using MSAL fallback");
+                    Context.Trace.WriteException(ex);
+
+                    // Fallback to MSAL's default browser opening logic, preferring Edge.
+                    return SystemWebViewOptions.OpenWithChromeEdgeBrowserAsync(uri);
+                }
+
+                return Task.CompletedTask;
+            }
         }
 
         private Task ShowDeviceCodeInTty(DeviceCodeResult dcr)
@@ -852,8 +882,14 @@ namespace GitCredentialManager.Authentication
 
         private bool CanUseSystemWebView(IPublicClientApplication app, Uri redirectUri)
         {
+            //
             // MSAL requires the application redirect URI is a loopback address to use the System WebView
-            return Context.SessionManager.IsWebBrowserAvailable && app.IsSystemWebViewAvailable && redirectUri.IsLoopback;
+            //
+            // Note: we do NOT check the MSAL 'IsSystemWebViewAvailable' property as it only
+            // looks for the presence of the DISPLAY environment variable on UNIX systems.
+            // This is insufficient as we instead handle launching the default browser ourselves.
+            //
+            return Context.SessionManager.IsWebBrowserAvailable && redirectUri.IsLoopback;
         }
 
         private void EnsureCanUseSystemWebView(IPublicClientApplication app, Uri redirectUri)
@@ -862,12 +898,6 @@ namespace GitCredentialManager.Authentication
             {
                 throw new Trace2InvalidOperationException(Context.Trace2,
                     "System web view is not available without a way to start a browser.");
-            }
-
-            if (!app.IsSystemWebViewAvailable)
-            {
-                throw new Trace2InvalidOperationException(Context.Trace2,
-                    "System web view is not available on this platform.");
             }
 
             if (!redirectUri.IsLoopback)

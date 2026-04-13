@@ -125,7 +125,7 @@ namespace GitHub
             return url.TrimEnd('/');
         }
 
-        public async Task<ICredential> GetCredentialAsync(InputArguments input)
+        public async Task<GetCredentialResult> GetCredentialAsync(InputArguments input)
         {
             string service = GetServiceName(input);
             Uri remoteUri = input.GetRemoteUri();
@@ -190,7 +190,7 @@ namespace GitHub
                 _context.Trace.WriteLine("Existing credential found.");
             }
 
-            return credential;
+            return new GetCredentialResult(credential);
         }
 
         private bool FilterAccounts(Uri remoteUri, IEnumerable<string> wwwAuth, ref IList<string> accounts)
@@ -285,10 +285,13 @@ namespace GitHub
             ThrowIfDisposed();
 
             // We should not allow unencrypted communication and should inform the user
-            if (StringComparer.OrdinalIgnoreCase.Equals(remoteUri.Scheme, "http"))
+            if (!_context.Settings.AllowUnsafeRemotes &&
+                StringComparer.OrdinalIgnoreCase.Equals(remoteUri.Scheme, "http"))
             {
                 throw new Trace2Exception(_context.Trace2,
-                    "Unencrypted HTTP is not supported for GitHub. Ensure the repository remote URL is using HTTPS.");
+                    "Unencrypted HTTP is not recommended for GitHub. " +
+                    "Ensure the repository remote URL is using HTTPS " +
+                    $"or see {Constants.HelpUrls.GcmUnsafeRemotes} about how to allow unsafe remotes.");
             }
 
             string service = GetServiceName(remoteUri);
